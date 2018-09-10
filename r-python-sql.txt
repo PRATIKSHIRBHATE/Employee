@@ -1,0 +1,49 @@
+SQL:Top 5 employees from each department
+#MS Sql
+#query = "SELECT * FROM (SELECT emp_id,emp_name,dept_id,Salary ,dense_rank() OVER ( partition by dept_id ORDER BY Salary desc) as ranking FROM df) a WHERE a.ranking <= 2"
+#df3 <- sqldf(query)
+
+#MySql
+query1 = "SELECT df1.emp_id , df1.emp_name, df1.dept_id, df1.Salary
+FROM df df1
+WHERE (
+SELECT COUNT(DISTINCT(df2.Salary))
+FROM df df2
+WHERE df2.Salary > df1.Salary and df1.dept_id  = df2.dept_id ) in (0,1) group by df1.dept_id , df1.Salary"
+
+df4 <- sqldf(query1)
+
+Python:
+df.sort_values('salary', ascending=False).groupby('department_id').head(5)
+
+df.groupby('department_id', as_index=False).apply(lambda x: x.nlargest(5, 'salary'))
+
+R:
+BaseR:
+
+ordered <- df[order(df$salary, decreasing = TRUE), ]    
+splits <- split(ordered, ordered$department_id)
+heads <- lapply(splits, head(5))
+do.call(rbind, heads)
+
+
+Dplyr:
+
+df %>%
+  group_by(department_id) %>%
+  top_n(n = 5, wt = salary)
+
+
+data.table:
+
+library(data.table)
+setorder(setDT(df), -salary)[, head(.SD, 5), keyby = department_id]
+
+OR
+
+setorder(setDT(df), department_id, -salary)[, head(.SD, 5), by = department_id]
+
+OR
+
+setorder(setDT(df), department_id, -salary)[, indx := seq_len(.N), by = department_id][indx <= 5]
+
